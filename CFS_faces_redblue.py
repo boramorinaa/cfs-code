@@ -328,8 +328,6 @@ def set_pos_hor(x):
     return pos_hor
     
     
-    
-    
 # Create some handy timers
 globalClock = core.Clock()  # to track the time since experiment started
 # to track time remaining of each (non-slip) routine
@@ -342,7 +340,7 @@ Instructions2Clock = core.Clock()
 
 text_for_instruction1 = '''Keep eyes open
 
-fixate central cross
+fixate the center of the frame
 
 Push SPACE to move on'''
 
@@ -355,6 +353,10 @@ with %s index
 If the face is on the right
 push %s
 with %s index
+
+On some trials you will be asked:
+Was there a picture?
+Push Y for YES, N for NO.
 
 QUESTIONS ?
 
@@ -481,7 +483,27 @@ thanksText_s = visual.TextStim(win=win, ori=0, name='thanksText_s',
                                color='white', colorSpace='rgb', opacity=1,
                                depth=-4.0)
 
+# --- "was there a picture?" question ---
+key_yes = 'y'
+key_no = 'n'
+text_seen_q = visual.TextStim(win=win, name='text_seen_q', font=u'Arial',
+                              text=u'Was there a picture?\n\nYES = %s        NO = %s' % (key_yes.upper(), key_no.upper()),
+                              pos=[0, 0], height=30, wrapWidth=float(win.size[0]/3),
+                              color=u'white', colorSpace='rgb', opacity=1)
 
+def ask_seen_picture():
+    """Show the question, wait for yes/no key. Returns (key, rt)."""
+    q_clock = core.Clock()
+    event.clearEvents(eventType='keyboard')
+    while True:
+        text_seen_q.draw()
+        win.flip()
+        keys = event.getKeys(keyList=[key_yes, key_no, 'escape'])
+        if 'escape' in keys:
+            core.quit()
+        if len(keys) > 0:
+            return keys[0], q_clock.getTime()
+            
 #------Prepare to start Routine "Instructions1"-------
 t = 0
 Instructions1Clock.reset()  # clock
@@ -919,19 +941,17 @@ to start the LAST BLOC'''  % (num_pause))
                 break  # at least one component has not yet finished
 
         # check if time is over
-        if frameN >= time_before:        # fixlength is an attribute of the list
+        if frameN >= time_before:
             continueRoutine = False
 
 #            # uncomment to check timing of cross
 #            intended = 2
 #            print  ("%.5f" % (intended - (pretrialClock.getTime() - start_cross))  )
 
-        # check for quit (the Esc key)
-        if endExpNow or event.getKeys(keyList=["escape"]):
+        if endExpNow:
             core.quit()
 
         # refresh the screen
-        # don't flip if this routine is over or we'll get a blank screen
         if continueRoutine:
             win.flip()
 
@@ -970,7 +990,7 @@ to start the LAST BLOC'''  % (num_pause))
     trialComponents.append(line_above_s_i)
     trialComponents.append(line_below_s_i)
     trialComponents.append(image)
-    trialComponents.append(fix_cross_stim_side)
+    
     trialComponents.append(key_resp_image)
 
     for thisComponent in trialComponents:
@@ -1022,7 +1042,7 @@ to start the LAST BLOC'''  % (num_pause))
         if line_below_s_i.status == STARTED and frameN >= (line_below_s_i.frameNStart + total_t):
             line_below_s_i.setAutoDraw(False)
 
-        # *image* updates
+         # *image* updates
         if frameN >= 0 and image.status == NOT_STARTED:
             image.tStart = t  # underestimates by a little under one frame
             image.frameNStart = frameN  # exact frame index
@@ -1032,91 +1052,56 @@ to start the LAST BLOC'''  % (num_pause))
         if image.status == STARTED:  # only update if being drawn
             image.setOpacity(((frameN - before_t) / fade_i_t)*float(max_opacity) if (frameN < fade_i_end_t) else (
                 float(max_opacity) if(frameN < fade_o_beg_t) else (fade_o_end_t - frameN) / fade_o_t), log=False)
-
-###################   uncomment for triggers   ########################
-#        # send trigger to port
-#        if image.status == STARTED and frameN < total_t and image.status != FINISHED:
-#            PORT.Out32(0x378,int(Trigger_bi))  # write trigger to port
-#        else:
-#            PORT.Out32(0x378,0)
-###################  ########################  ########################
-
-        # *fix_cross_stim_side* updates
-        if frameN >= 0 and fix_cross_stim_side.status == NOT_STARTED:
-            # keep track of start time/frame for later
-            # underestimates by a little under one frame
-            fix_cross_stim_side.tStart = t
-            fix_cross_stim_side.frameNStart = frameN  # exact frame index
-            fix_cross_stim_side.setAutoDraw(True)
-        if fix_cross_stim_side.status == STARTED and frameN >= (fix_cross_stim_side.frameNStart + total_t):
-            fix_cross_stim_side.setAutoDraw(False)
+        if image.status == STARTED and Catch == 1:
+            image.setOpacity(0, log=False)   # catch trial: no picture
 
         # *update all frames
         if frameN >= 0 and frame_s_i.status == NOT_STARTED:
-            # keep track of start time/frame for later
-            frame_s_i.tStart = t  # underestimates by a little under one frame
-            frame_s_i.frameNStart = frameN  # exact frame index
+            frame_s_i.tStart = t
+            frame_s_i.frameNStart = frameN
             frame_s_i.draw()
             frame2_s_i.draw()
-            square_s_i.tStart = t  # underestimates by a little under one frame
+            square_s_i.tStart = t
             square_s_i.draw()
-        if frame_s_i.status == STARTED and frameN >= (frame_i.frameNStart + total_t):
+        if frame_s_i.status == STARTED and frameN >= (frame_s_i.frameNStart + total_t):
             frame_s_i.setAutoDraw(False)
             frame2_s_i.setAutoDraw(False)
 
         # flash Mondrians
         if frameN >= f_change:
-            myRand = randint(1, 100)
-#            print myRand    # tto check
+            myRand = randint(0, 100)
             # advance by 6 frames, so that the next draw occurs 6 frames later
             f_change += f_t
-#           print globalClock.getTime()  # get precise timing of each flash refresh
 
-#            # uncomment to check timing of flashes (how much do they differ from the intended 100 ms?)
-#            intended = 0.1
-#            print  ("%.5f" % (intended - (trialClock.getTime() - start_trial))  )
-#            start_trial = trialClock.getTime()
-
-        flash[myRand].setOpacity(((frameN - before_f) / fade_i_f)*float(max_opacity_flash) if (frameN < fade_i_end_f) else 
+        flash[myRand].setOpacity(((frameN - before_f) / fade_i_f)*float(max_opacity_flash) if (frameN < fade_i_end_f) else
         (float(max_opacity_flash) if(frameN < fade_o_beg_f) else (fade_o_end_f - frameN) / fade_o_f), log=False)
         flash[myRand].draw()  # draw one of the randomly selected flashes
 
         # *key_resp_image* updates
         if frameN >= 0 and key_resp_image.status == NOT_STARTED:
-            # keep track of start time/frame for later
-            # underestimates by a little under one frame
             key_resp_image.tStart = t
-            key_resp_image.frameNStart = frameN  # exact frame index
+            key_resp_image.frameNStart = frameN
             key_resp_image.status = STARTED
-            # keyboard checking is just starting
-            key_resp_image.clock.reset()  # now t=0
+            key_resp_image.clock.reset()
             event.clearEvents(eventType='keyboard')
         if key_resp_image.status == STARTED and frameN >= (key_resp_image.frameNStart + total_t):
             key_resp_image.status = STOPPED
-        if key_resp_image.status == STARTED:
-            theseKeys = event.getKeys(keyList=['j', 'f'])
 
-            # check for quit:
-            if "escape" in theseKeys:
-                endExpNow = True
-            if len(theseKeys) > 0:  # at least one key was pressed
-                # just the last key pressed
+        # ONE getKeys call per frame, including escape
+        keys_now = event.getKeys(keyList=['j', 'f', 'escape'])
+        if 'escape' in keys_now:
+            core.quit()
+
+        if key_resp_image.status == STARTED and Task != 'detect':
+            theseKeys = [k for k in keys_now if k in ('j', 'f')]
+            if len(theseKeys) > 0:
                 key_resp_image.keys = theseKeys[-1]
                 key_resp_image.rt = key_resp_image.clock.getTime()
-#                    key_resp_image.globtime = init_experimentClock.getTime()
-
-                # a response ends the routine
                 if frameN >= before_t:
                     continueRoutine = False
-###################   uncomment for triggers   ########################
-#                    PORT.Out32(0x378,64)         # write 64 for response
-###################  ########################  ########################
-
-
-                # was this 'correct'?
-                if Position_ho == 'left' and (key_resp_image.keys == correct_left):
+                if Position_ho == 'left' and key_resp_image.keys == correct_left:
                     key_resp_image.corr = 1
-                elif Position_ho == 'right' and (key_resp_image.keys == correct_right):
+                elif Position_ho == 'right' and key_resp_image.keys == correct_right:
                     key_resp_image.corr = 1
                 else:
                     key_resp_image.corr = 0
@@ -1160,7 +1145,6 @@ to start the LAST BLOC'''  % (num_pause))
     trials.addData('before_t', before_t)
     trials.addData('stim_t', stim_t)
     trials.addData('total_t', total_t)
-    thisExp.nextEntry()
 
 
 
@@ -1281,7 +1265,18 @@ to start the LAST BLOC'''  % (num_pause))
         if hasattr(thisComponent, "setAutoDraw"):
             thisComponent.setAutoDraw(False)
 
-
+ # ---- "Was there a picture?" question (detect trials only) ----
+    if Task == 'detect':
+        seen_key, seen_rt = ask_seen_picture()
+        picture_present = (Catch == 0)          # Catch==1 means no picture shown
+        said_yes = (seen_key == key_yes)
+        trials.addData('seen_key', seen_key)
+        trials.addData('seen_rt', seen_rt)
+        trials.addData('seen_correct', int(said_yes == picture_present))
+    else:
+        trials.addData('seen_key', None)
+        trials.addData('seen_rt', None)
+        trials.addData('seen_correct', None)
 
 
 #------Prepare to start Routine "thanks"-------
@@ -1356,12 +1351,10 @@ while continueRoutine:
     # don't flip if this routine is over or we'll get a blank screen
     if continueRoutine:
         win.flip()
-
 #-------Ending Routine "thanks"-------
 for thisComponent in thanksComponents:
     if hasattr(thisComponent, "setAutoDraw"):
         thisComponent.setAutoDraw(False)
-
 
 win.close()
 core.quit()
